@@ -49,18 +49,41 @@ Raw Articles (title, text, source)
 ## Dataset
 
 - **Source:** `corona_fake.csv` — COVID-19 articles labeled FAKE / TRUE
+- **Size:** 1,164 rows; 1,159 labeled (575 fake, 584 true) after normalising label spellings (`Fake` / `fake` → `FAKE`)
 - **Features used:** `title`, `text`, `source`
 - **Label:** `label` (binary: FAKE / TRUE)
-- Includes articles from Facebook, news sites, and social media
+- Articles from 269 sources, including Facebook, news sites, health agencies and social media
 
 ---
 
 ## Key Results
 
-| Model | Accuracy | Notes |
-|-------|----------|-------|
-| LinearSVC (cross-val) | ~89% | Local scikit-learn |
-| AWS Linear Learner | ~91% | SageMaker training job |
+Re-run on all 1,159 labeled articles with the project's own feature code (63 features), 5-fold stratified cross-validation, fake as the positive class:
+
+| Model | Accuracy | Precision | Recall | F1 | Notes |
+|-------|----------|-----------|--------|----|-------|
+| LinearSVC (linguistic features) | 83.8% | 83.2% | 84.4% | 0.838 | Project's scikit-learn model |
+| Logistic regression (linguistic features) | 84.0% | 83.5% | 84.5% | 0.840 | Local stand-in for SageMaker Linear Learner |
+| TF-IDF words + LinearSVC | 93.4% | 93.2% | 93.4% | 0.933 | Word-based comparison |
+
+The SageMaker Linear Learner job needs an AWS account to re-run, so it is not included above.
+
+### What separates fake from true articles
+
+| Signal (average per article) | Fake vs true |
+|---|---|
+| Uppercase letters in the title | **+240%** (15.5 vs 4.6) |
+| Uppercase share of the text | +52% |
+| Article length | +34% |
+| Power words per 100 words | −32% |
+| Tentative words ("may", "could") per 100 words | −30% |
+| Question words in the title | **−84%** |
+
+### Caveat: labels follow the publisher
+
+266 of the 269 sources publish only fake or only true articles. A model can therefore score well by recognising each publisher's house style rather than misinformation itself. A stricter evaluation would hold out entire sources (grouped cross-validation), so the model is tested on publishers it has never seen.
+
+📊 **Interactive dashboard:** [shivamchaudhary.dev/dashboards/covid-fake-news](https://shivamchaudhary.dev/dashboards/covid-fake-news/)
 
 ---
 
